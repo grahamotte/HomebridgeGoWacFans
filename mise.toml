@@ -11,20 +11,15 @@ npm publish
 '''
 
 [tasks.push]
-description = "Force-push the current branch to Codeberg (origin) and GitHub (origin_backup)"
+description = "Force-push main to Codeberg (origin) and GitHub (origin_backup)"
 run = '''
 set -euo pipefail
-branch="$(git branch --show-current)"
-if [ -z "$branch" ]; then
-  echo "Cannot push from a detached HEAD."
-  exit 1
-fi
 push_to() {
   local remote="$1"
   local repo="$2"
   git remote remove "$remote" 2>/dev/null || true
   git remote add "$remote" "$repo"
-  git push -f "$remote" "HEAD:$branch"
+  git push -f "$remote" main
 }
 push_to origin "ssh://git@codeberg.org/grahamotte/homebridge-go-wac-fans.git"
 push_to origin_backup "git@github.com:grahamotte/homebridge-go-wac-fans.git"
