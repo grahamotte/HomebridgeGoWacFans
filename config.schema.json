@@ -1,0 +1,66 @@
+{
+  "pluginAlias": "GoWacFans",
+  "pluginType": "platform",
+  "singular": true,
+  "strictValidation": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "GoWacFans"
+      },
+      "discover": {
+        "title": "Discover fans by probing local IPv4 networks",
+        "type": "boolean",
+        "default": true
+      },
+      "hosts": {
+        "title": "Manual fan hosts",
+        "description": "Optional hostnames or IP addresses to query in addition to discovery.",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "placeholder": "192.168.1.50"
+        },
+        "default": []
+      },
+      "discoveryIntervalMs": {
+        "title": "Rediscovery interval (milliseconds)",
+        "description": "How often to look for fans that were powered off during startup. Set to 0 to disable rediscovery.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3600000,
+        "default": 60000
+      },
+      "scanTimeoutMs": {
+        "title": "Discovery probe timeout (milliseconds)",
+        "type": "integer",
+        "minimum": 200,
+        "maximum": 5000,
+        "default": 750
+      },
+      "requestTimeoutMs": {
+        "title": "Fan request timeout (milliseconds)",
+        "type": "integer",
+        "minimum": 500,
+        "maximum": 15000,
+        "default": 3000
+      },
+      "pollIntervalMs": {
+        "title": "Background refresh interval (milliseconds)",
+        "description": "Set to 0 to disable background polling.",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 300000,
+        "default": 30000
+      },
+      "removeStaleAccessories": {
+        "title": "Remove undiscovered cached fans",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
+}
