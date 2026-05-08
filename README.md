@@ -34,7 +34,7 @@ Host entries are optional and should only be needed for unusual networks:
 - `discover`: use Bonjour discovery and local IPv4 probing. Default: `true`.
 - `hosts`: optional fan IP addresses or hostnames.
 - `discoveryIntervalMs`: rediscovery interval for switch-powered fans. Use `0` to disable. Default: `60000`.
-- `scanTimeoutMs`: per-host discovery timeout. Default: `750`.
+- `scanTimeoutMs`: per-host discovery timeout. Default: `5000`.
 - `requestTimeoutMs`: normal API timeout. Default: `3000`.
 - `pollIntervalMs`: background refresh interval. Default: `30000`.
 - `removeStaleAccessories`: remove cached fans not found during discovery. Default: `false`.

@@ -15,7 +15,7 @@ export function parseConfig(config: PlatformConfig): GoWacFansConfig {
     hosts: readHosts(config.hosts),
     discover: readBool(config.discover, true),
     discoveryIntervalMs: readNumber(config.discoveryIntervalMs, 60000, 0, 3600000),
-    scanTimeoutMs: readNumber(config.scanTimeoutMs, 750, 200, 5000),
+    scanTimeoutMs: readNumber(config.scanTimeoutMs, 5000, 200, 5000),
     requestTimeoutMs: readNumber(config.requestTimeoutMs, 3000, 500, 15000),
     pollIntervalMs: readNumber(config.pollIntervalMs, 30000, 0, 300000),
     removeStaleAccessories: readBool(config.removeStaleAccessories, false)

@@ -39,7 +39,7 @@
         "type": "integer",
         "minimum": 200,
         "maximum": 5000,
-        "default": 750
+        "default": 5000
       },
       "requestTimeoutMs": {
         "title": "Fan request timeout (milliseconds)",
