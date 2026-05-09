@@ -2,7 +2,7 @@
   "name": "homebridge-go-wac-fans",
   "displayName": "GoWacFans",
   "type": "module",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Homebridge plugin for local WAC and Modern Forms fans",
   "author": "Graham Otte",
   "license": "Apache-2.0",

@@ -12,8 +12,13 @@ import { discoverFans, type DiscoveredFan } from "./discovery.js";
 import { WacFanAccessory } from "./accessory.js";
 import { PLATFORM_NAME, PLUGIN_NAME } from "./settings.js";
 
+interface CachedDevice extends DiscoveredFan {
+  readonly lastSeen: string;
+  readonly unavailableSince?: string;
+}
+
 interface Context {
-  device?: DiscoveredFan & { readonly lastSeen: string };
+  device?: CachedDevice;
 }
 
 export class GoWacFansPlatform implements DynamicPlatformPlugin {
@@ -23,6 +28,7 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
   public readonly settings: GoWacFansConfig;
   private readonly controllers = new Map<string, WacFanAccessory>();
   private discoveryRunning = false;
+  private discoveryReported = false;
   private discoveryTimer?: ReturnType<typeof setInterval>;
 
   constructor(
@@ -54,7 +60,8 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
     }
 
     this.discoveryRunning = true;
-    this.log.info("Discovering WAC fans...");
+    const initialDiscovery = !this.discoveryReported;
+    this.logDiscovery("Discovering WAC fans...", initialDiscovery);
     try {
       const cachedHosts = [...this.accessories.values()]
         .map((accessory) => (accessory.context as Context).device?.host)
@@ -65,8 +72,9 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
         this.settings.discover,
       );
 
-      this.sync(fans);
-      this.log.info(`WAC discovery finished: ${fans.length} fan(s) available.`);
+      const changed = this.sync(fans, initialDiscovery);
+      this.logDiscovery(`WAC discovery finished: ${fans.length} fan(s) available.`, initialDiscovery || changed);
+      this.discoveryReported = true;
     } finally {
       this.discoveryRunning = false;
     }
@@ -86,23 +94,38 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
     this.discoveryTimer.unref?.();
   }
 
-  private sync(fans: readonly DiscoveredFan[]): void {
+  private sync(fans: readonly DiscoveredFan[], initialDiscovery: boolean): boolean {
     const seen = new Set<string>();
+    const now = new Date().toISOString();
+    let changed = false;
 
     for (const fan of fans) {
       const uuid = this.api.hap.uuid.generate(fan.clientId);
       const accessory = this.accessories.get(uuid) ?? new this.api.platformAccessory(fan.deviceName, uuid);
       const cached = this.accessories.has(uuid);
+      const previous = (accessory.context as Context).device;
+      const wasUnavailable = Boolean(previous?.unavailableSince);
+      const deviceChanged = previous ? hasDeviceChanged(previous, fan) : false;
       seen.add(uuid);
-      (accessory.context as Context).device = { ...fan, lastSeen: new Date().toISOString() };
-      this.attach(uuid, accessory, fan);
+      (accessory.context as Context).device = { ...fan, lastSeen: now };
+
+      if (!this.controllers.has(uuid) || deviceChanged || wasUnavailable) {
+        this.attach(uuid, accessory, fan);
+      }
 
       if (!cached) {
         this.log.info(`Adding fan ${fan.deviceName} at ${fan.host}.`);
         this.accessories.set(uuid, accessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      } else {
+        changed = true;
+      } else if (initialDiscovery) {
         this.log.info(`Restored fan ${fan.deviceName} at ${fan.host}.`);
+      } else if (wasUnavailable) {
+        this.log.info(`Fan ${fan.deviceName} is available again at ${fan.host}.`);
+        changed = true;
+      } else if (deviceChanged) {
+        this.log.info(`Updated fan ${fan.deviceName} at ${fan.host}.`);
+        changed = true;
       }
     }
 
@@ -112,24 +135,53 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
       }
 
       if (this.settings.removeStaleAccessories) {
+        this.log.warn(`Removing stale fan ${accessory.displayName}; it was not discovered this run.`);
         this.controllers.get(uuid)?.stop();
         this.controllers.delete(uuid);
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         this.accessories.delete(uuid);
+        changed = true;
       } else {
         const device = (accessory.context as Context).device;
         if (!device) {
           continue;
         }
 
-        this.log.warn(`Keeping cached fan ${accessory.displayName}; it was not discovered this run.`);
-        this.attach(uuid, accessory, device);
+        if (!device.unavailableSince) {
+          this.log.warn(`Keeping cached fan ${accessory.displayName}; it was not discovered this run.`);
+          (accessory.context as Context).device = { ...device, unavailableSince: now };
+          changed = true;
+        }
+
+        if (!this.controllers.has(uuid)) {
+          this.attach(uuid, accessory, device);
+        }
       }
     }
+
+    return changed;
   }
 
   private attach(uuid: string, accessory: PlatformAccessory, fan: DiscoveredFan): void {
     this.controllers.get(uuid)?.stop();
     this.controllers.set(uuid, new WacFanAccessory(this, accessory, fan));
   }
+
+  private logDiscovery(message: string, important: boolean): void {
+    if (important) {
+      this.log.info(message);
+    } else {
+      this.log.debug(message);
+    }
+  }
+}
+
+function hasDeviceChanged(previous: CachedDevice, fan: DiscoveredFan): boolean {
+  return previous.clientId !== fan.clientId ||
+    previous.host !== fan.host ||
+    previous.mac !== fan.mac ||
+    previous.deviceName !== fan.deviceName ||
+    previous.fanType !== fan.fanType ||
+    previous.firmwareVersion !== fan.firmwareVersion ||
+    previous.lightType !== fan.lightType;
 }
