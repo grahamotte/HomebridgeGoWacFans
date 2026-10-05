@@ -28,7 +28,7 @@ description = "Fetch and safely push main to origin"
 depends = ["check-clean"]
 run = '''
 set -euo pipefail
-if [ "$(git remote get-url origin)" != "git@github.com:grahamotte/homebridge-go-wac-fans.git" ]; then
+if [ "$(git remote get-url origin)" != "git@github.com:grahamotte/HomebridgeGoWacFans.git" ]; then
   echo "Refusing to push: origin must point to the GitHub workflow repository" >&2
   exit 1
 fi
