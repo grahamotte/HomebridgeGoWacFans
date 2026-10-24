@@ -9,6 +9,7 @@ import type {
 } from "homebridge";
 import { discoverFans, type DiscoveredFan } from "./discovery.js";
 import { WacFanAccessory } from "./accessory.js";
+import { withPluginPrefix } from "./logger.js";
 import { DISCOVERY_INTERVAL_MS, PLATFORM_NAME, PLUGIN_NAME, SCAN_TIMEOUT_MS } from "./settings.js";
 
 interface CachedDevice extends DiscoveredFan {
@@ -28,12 +29,14 @@ export class GoWacFansPlatform implements DynamicPlatformPlugin {
   private discoveryRunning = false;
   private discoveryReported = false;
   private discoveryTimer?: ReturnType<typeof setInterval>;
+  public readonly log: Logging;
 
   constructor(
-    public readonly log: Logging,
+    log: Logging,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+    this.log = withPluginPrefix(log);
     this.Service = api.hap.Service;
     this.Characteristic = api.hap.Characteristic;
 
